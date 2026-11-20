@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeamA x TeamB Team Building – Lucky Wheel</title>
+<style>
+  :root{
+    --ink:#4a4466; --pink:#ff9fb8; --pink2:#ffc2d4; --mint:#9fe3cf; --sky:#a9d8f5; --lav:#cdbdf5; --peach:#ffcfa6; --butter:#fff1a8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--ink);
+    font-family:"Sarabun","Noto Sans Thai","Leelawadee UI",Tahoma,system-ui,sans-serif;
+    background:radial-gradient(900px 600px at 10% -10%,#ffe0ea 0%,transparent 60%),
+               radial-gradient(900px 600px at 100% 0%,#d9f2ff 0%,transparent 55%),
+               radial-gradient(800px 600px at 50% 110%,#e6dcff 0%,transparent 60%),
+               linear-gradient(160deg,#fff7fb,#f3fbff);
+    background-attachment:fixed;
+  }
+  header{text-align:center;padding:22px 12px 6px}
+  .badge{display:inline-flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.04em;
+    font-size:clamp(26px,4.2vw,46px)}
+  .badge .TeamA{color:#5cc9ae} .badge .TeamB{color:#ff8fab} .badge .x{color:#c4a9f0;font-size:.7em}
+  header p{margin:4px 0 0;opacity:.7;font-size:clamp(14px,1.8vw,18px);letter-spacing:.2em;text-transform:uppercase}
+  main{max-width:1280px;margin:0 auto;padding:12px 16px 40px;display:grid;gap:18px;
+    grid-template-columns:minmax(300px,1.1fr) minmax(300px,1fr)}
+  @media (max-width:980px){main{grid-template-columns:1fr}}
+  .card{background:rgba(255,255,255,.75);border:2px solid #fff;border-radius:24px;padding:18px;
+    backdrop-filter:blur(6px);box-shadow:0 10px 28px rgba(160,140,200,.22)}
+  h2{margin:0 0 12px;font-size:20px;display:flex;align-items:center;gap:8px}
+  h2 .dot{width:12px;height:12px;border-radius:50%;background:var(--pink)}
+  .wheelWrap{position:relative;width:min(100%,560px);margin:0 auto;aspect-ratio:1}
+  canvas{width:100%;height:100%;display:block}
+  .pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);z-index:3;width:0;height:0;
+    border-left:20px solid transparent;border-right:20px solid transparent;border-top:42px solid #ff8fab;
+    filter:drop-shadow(0 4px 4px rgba(120,90,150,.35))}
+  .spinBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;
+    width:22%;aspect-ratio:1;border-radius:50%;border:5px solid #fff;cursor:pointer;
+    background:radial-gradient(circle at 35% 30%,#ffd0dd,var(--pink) 65%,#f27fa0);color:#fff;
+    font-weight:800;font-size:clamp(14px,2.4vw,22px);line-height:1;font-family:inherit;
+    box-shadow:0 6px 18px rgba(200,100,140,.4);transition:transform .15s}
+  .spinBtn:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.07)}
+  .spinBtn:disabled{filter:grayscale(.5);opacity:.7;cursor:not-allowed}
+  textarea,input[type=number]{width:100%;border-radius:14px;border:2px solid #eadff9;
+    background:#fff;color:var(--ink);padding:10px 12px;font:inherit;font-size:15px}
+  textarea:focus,input:focus{outline:none;border-color:var(--lav)}
+  textarea{min-height:150px;resize:vertical}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+  button.btn{border:0;border-radius:14px;padding:10px 16px;font:inherit;font-weight:700;font-size:15px;cursor:pointer;
+    color:#3f5f57;background:linear-gradient(135deg,#b6ecdc,#8fdcc6)}
+  button.btn.alt{background:linear-gradient(135deg,#ffc2d4,#ff9fb8);color:#6b2d44}
+  button.btn.ghost{background:#efe8fb;color:#5b4f86}
+  button.btn:hover:not(:disabled){filter:brightness(1.04);transform:translateY(-1px)}
+  button.btn:disabled{opacity:.45;cursor:not-allowed}
+  .switch{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+  .switch input{display:none}
+  .track{width:46px;height:26px;border-radius:99px;background:#ddd3f0;position:relative;transition:.2s}
+  .track::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .switch input:checked + .track{background:#8fdcc6}
+  .switch input:checked + .track::after{left:23px}
+  .small{font-size:13px;opacity:.75}
+  .status{padding:10px 14px;border-radius:14px;background:#fff3e3;border:2px dashed var(--peach);margin-bottom:12px;font-size:15px;min-height:44px}
+  .status.active{background:#e3f8f1;border-color:var(--mint);animation:pulse 1.4s infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 6px rgba(159,227,207,.35)}}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:10px}
+  .box{position:relative;aspect-ratio:1;border-radius:16px;border:2px solid #fff;cursor:pointer;
+    background:linear-gradient(145deg,#cfe9fb,#a9d8f5);color:var(--ink);font-weight:800;font-size:22px;line-height:1;font-family:inherit;
+    display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;overflow:hidden;transition:transform .15s;
+    box-shadow:0 4px 10px rgba(130,160,200,.3)}
+  .box::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:14px;transform:translateX(-50%);background:var(--pink)}
+  .box::after{content:"";position:absolute;left:0;right:0;top:34%;height:14px;background:var(--pink)}
+  .box span{position:relative;z-index:2;background:rgba(255,255,255,.92);border-radius:8px;padding:2px 8px;font-size:18px}
+  .box:disabled{cursor:not-allowed}
+  .grid.live .box:not(.taken):hover{transform:translateY(-4px) rotate(-3deg);border-color:var(--butter)}
+  .box.taken{background:linear-gradient(145deg,#d5f5ea,#a9e6d2);box-shadow:none}
+  .box.taken::before,.box.taken::after{display:none}
+  .box.taken .nm{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-size:11px;line-height:1.15;padding:4px;text-align:center;word-break:break-word;color:#3f6a5d}
+  .box.taken .nm b{font-size:15px;color:#e0668a}
+  .box.taken span{display:none}
+  .box.pop{animation:pop .6s}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.35) rotate(6deg)}100%{transform:scale(1)}}
+  ul.hist{list-style:none;padding:0;margin:0;max-height:180px;overflow:auto}
+  ul.hist li{padding:7px 10px;border-radius:12px;background:#f5effd;margin-bottom:6px;display:flex;justify-content:space-between;gap:8px}
+  ul.hist li b{color:#e0668a}
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:50;background:rgba(120,100,160,.35);backdrop-filter:blur(3px);padding:16px}
+  .modal.show{display:flex}
+  .dlg{background:linear-gradient(160deg,#fff,#fdf1f7 60%,#eef6ff);border:4px solid #fff;border-radius:28px;padding:28px 26px;
+    text-align:center;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(150,120,190,.45);animation:in .45s}
+  @keyframes in{from{transform:scale(.6);opacity:0}}
+  .dlg .lbl{letter-spacing:.3em;font-size:14px;color:#5cc9ae;font-weight:700}
+  .dlg .name{font-size:clamp(34px,7vw,60px);font-weight:800;color:#ff7fa3;margin:10px 0 16px;word-break:break-word}
+  .dlg .num{font-size:clamp(70px,16vw,130px);font-weight:900;line-height:1;color:#b79cf0;margin:6px 0}
+  .dlg .row{justify-content:center}
+  #fx{position:fixed;inset:0;pointer-events:none;z-index:60}
+  footer{text-align:center;opacity:.5;font-size:12px;padding-bottom:20px}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+
+<header>
+  <div class="badge"><span class="TeamA">TeamA</span><span class="x">✕</span><span class="TeamB">TeamB</span></div>
+  <p>Team Building · Lucky Wheel</p>
+</header>
+
+<main>
+  <!-- LEFT: wheel -->
+  <section class="card">
+    <h2><span class="dot"></span>วงล้อผู้โชคดี</h2>
+    <div class="wheelWrap">
+      <div class="pointer"></div>
+      <canvas id="wheel" width="1100" height="1100"></canvas>
+      <button class="spinBtn" id="spinBtn">หมุน!</button>
+    </div>
+    <div class="row" style="justify-content:center">
+      <label class="switch">
+        <input type="checkbox" id="removeSw" checked>
+        <span class="track"></span>
+        <span>ตัดชื่อผู้ที่ถูกเลือกแล้วออกจากวงล้อ</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- RIGHT -->
+  <div style="display:grid;gap:18px;align-content:start">
+    <section class="card">
+      <h2><span class="dot"></span>รายชื่อผู้เข้าร่วม <span class="small" id="cnt"></span></h2>
+      <textarea id="names" spellcheck="false" placeholder="พิมพ์ชื่อ 1 ชื่อต่อ 1 บรรทัด"></textarea>
+      <div class="row">
+        <button class="btn" id="applyBtn">อัปเดตวงล้อ</button>
+        <button class="btn ghost" id="shuffleBtn">สลับลำดับ</button>
+        <button class="btn ghost" id="resetAllBtn">รีเซ็ตทั้งหมด</button>
+      </div>
+      <p class="small" style="margin:8px 0 0">พิมพ์หรือวางชื่อได้เลย แล้วกด “อัปเดตวงล้อ”</p>
+    </section>
+
+    <section class="card">
+      <h2><span class="dot"></span>กล่องของขวัญ <span class="small" id="boxCnt"></span></h2>
+      <div class="status" id="status">หมุนวงล้อเพื่อเลือกผู้โชคดีก่อน</div>
+      <div class="grid" id="grid"></div>
+      <div class="row">
+        <label class="small" for="boxN">จำนวนกล่อง</label>
+        <input type="number" id="boxN" min="2" max="100" value="32" style="width:90px">
+        <button class="btn ghost" id="boxApply">ตั้งค่า</button>
+        <button class="btn alt" id="randBox" disabled>สุ่มกล่องให้</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="dot"></span>ผลการจับรางวัล</h2>
+      <ul class="hist" id="hist"><li class="small">ยังไม่มีผู้โชคดี</li></ul>
+    </section>
+  </div>
+</main>
+
+<footer>TeamA × TeamB Team Building</footer>
+
+<!-- Winner modal -->
+<div class="modal" id="winModal">
+  <div class="dlg">
+    <div class="lbl">🎉 ผู้โชคดีคือ 🎉</div>
+    <div class="name" id="winName"></div>
+    <div class="row">
+      <button class="btn alt" id="goPick">เลือกกล่องของขวัญ 🎁</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reveal modal -->
+<div class="modal" id="revModal">
+  <div class="dlg">
+    <div class="lbl" id="revWho"></div>
+    <div class="small" style="margin-top:8px">ได้รับกล่องของขวัญหมายเลข</div>
+    <div class="num" id="revNum"></div>
+    <div class="row"><button class="btn" id="revOk">ตกลง</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const DEFAULT_NAMES = ["Mr.A","Mr.B","Mr.C","Mr.D","Mr.E","Mr.F","Ms.G","Ms.F","John","Laular","Luna","philips"];
+  const COLORS = ["#ffc2d4","#ffe0b8","#fff3b0","#c8f0dc","#bfe4f8","#d9ccf8"];
+  const CONF = ["#ff8fab","#ffc36b","#ffe066","#7fdcb8","#7cc4ee","#b79cf0"];
+
+  let names = [...DEFAULT_NAMES];       // names currently on wheel
+  let allNames = [...names];            // everything entered (for reset)
+  let rot = 0, spinning = false;
+  let current = null;                   // current winner awaiting box pick
+  let boxCount = 32;
+  let taken = {};                       // boxNo -> name
+  let history = [];
+
+  const wheel = $("wheel"), ctx = wheel.getContext("2d");
+
+  /* ---------- wheel drawing ---------- */
+  function draw(){
+    const W = wheel.width, R = W/2, c = R;
+    ctx.clearRect(0,0,W,W);
+    // outer ring
+    ctx.beginPath(); ctx.arc(c,c,R-4,0,Math.PI*2);
+    ctx.fillStyle="#ffffff"; ctx.fill();
+    ctx.beginPath(); ctx.arc(c,c,R-26,0,Math.PI*2);
+    ctx.fillStyle="#e9defa"; ctx.fill();
+    const r = R-34, n = names.length;
+    if(!n){
+      ctx.fillStyle="#f1eaff"; ctx.beginPath(); ctx.arc(c,c,r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#4a4466"; ctx.font="bold 44px sans-serif"; ctx.textAlign="center";
+      ctx.fillText("ไม่มีรายชื่อ",c,c); return;
+    }
+    const seg = Math.PI*2/n;
+    for(let i=0;i<n;i++){
+      const a0 = rot + i*seg, a1 = a0+seg;
+      ctx.beginPath(); ctx.moveTo(c,c); ctx.arc(c,c,r,a0,a1); ctx.closePath();
+      ctx.fillStyle = COLORS[i%COLORS.length]; ctx.fill();
+      ctx.strokeStyle="#fff"; ctx.lineWidth=3; ctx.stroke();
+      // text
+      ctx.save(); ctx.translate(c,c); ctx.rotate(a0+seg/2);
+      ctx.textAlign="right"; ctx.textBaseline="middle";
+      ctx.fillStyle = "#4a4466";
+      const size = Math.max(18, Math.min(46, 340/Math.max(6,n)*1.1, 2*Math.PI*r/n*0.55));
+      ctx.font = `700 ${size}px "Sarabun","Noto Sans Thai",Tahoma,sans-serif`;
+      let t = names[i];
+      const maxW = r*0.72;
+      while(ctx.measureText(t).width>maxW && t.length>2) t = t.slice(0,-2)+"…";
+      ctx.fillText(t, r-24, 0);
+      ctx.restore();
+    }
+    // studs
+    for(let i=0;i<24;i++){
+      const a=i*Math.PI*2/24;
+      ctx.beginPath(); ctx.arc(c+Math.cos(a)*(R-15), c+Math.sin(a)*(R-15), 6, 0,Math.PI*2);
+      ctx.fillStyle = i%2? "#ff9fb8":"#c4a9f0"; ctx.fill();
+    }
+  }
+
+  /* ---------- spin ---------- */
+  const TAU = Math.PI*2;
+  function spin(){
+    if(spinning || !names.length || current) return;
+    spinning = true; $("spinBtn").disabled = true;
+    setStatus("กำลังหมุน...", false);
+    const n = names.length, seg = TAU/n;
+    const idx = Math.floor(Math.random()*n);
+    const jitter = (Math.random()-.5)*seg*0.7;
+    // pointer is at top = -PI/2
+    let target = -Math.PI/2 - (idx+.5)*seg + jitter;
+    const spins = 6 + Math.floor(Math.random()*3);
+    // normalise so target > rot + spins full turns
+    let base = rot - ((rot % TAU)+TAU)%TAU;
+    target += base + spins*TAU;
+    while(target < rot + spins*TAU) target += TAU;
+    const start = rot, delta = target - start, dur = 5500 + Math.random()*1500, t0 = performance.now();
+    const ease = x => 1 - Math.pow(1-x,4);
+    (function frame(now){
+      const p = Math.min(1,(now-t0)/dur);
+      rot = start + delta*ease(p);
+      draw();
+      if(p<1) requestAnimationFrame(frame);
+      else { spinning=false; win(idx); }
+    })(t0);
+  }
+
+  function win(idx){
+    current = names[idx];
+    $("winName").textContent = current;
+    $("winModal").classList.add("show");
+    confetti();
+  }
+
+  /* ---------- boxes ---------- */
+  function buildGrid(){
+    const g = $("grid"); g.innerHTML = "";
+    for(let i=1;i<=boxCount;i++){
+      const b = document.createElement("button");
+      b.className = "box"; b.dataset.n = i;
+      if(taken[i]){
+        b.classList.add("taken"); b.disabled = true;
+        b.innerHTML = `<div class="nm"><b>#${i}</b>${esc(taken[i])}</div>`;
+      } else {
+        b.innerHTML = `<span>${i}</span>`;
+        b.disabled = !current;
+      }
+      b.onclick = () => pickBox(i);
+      g.appendChild(b);
+    }
+    g.classList.toggle("live", !!current);
+    $("boxCnt").textContent = `(เหลือ ${boxCount - Object.keys(taken).length}/${boxCount})`;
+    $("randBox").disabled = !current;
+  }
+  const esc = s => s.replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  function pickBox(n){
+    if(!current || taken[n]) return;
+    const who = current;
+    taken[n] = who;
+    history.unshift({who,n}); renderHist();
+    $("winModal").classList.remove("show");
+    buildGrid();
+    const el = $("grid").querySelector(`[data-n="${n}"]`); if(el) el.classList.add("pop");
+    $("revWho").textContent = who;
+    $("revNum").textContent = n;
+    $("revModal").classList.add("show");
+    confetti();
+    finishTurn(who);
+  }
+
+  function finishTurn(who){
+    current = null;
+    if($("removeSw").checked){
+      const i = names.indexOf(who);
+      if(i>-1) names.splice(i,1);
+      updateCount();
+    }
+    $("spinBtn").disabled = !names.length;
+    draw();
+    buildGrid();
+    setStatus(names.length ? "พร้อมหมุนคนต่อไป" : "ครบทุกคนแล้ว 🎉", false);
+  }
+
+  function setStatus(t, active){
+    const s = $("status"); s.textContent = t; s.classList.toggle("active", active);
+  }
+
+  function renderHist(){
+    const ul = $("hist");
+    if(!history.length){ ul.innerHTML = '<li class="small">ยังไม่มีผู้โชคดี</li>'; return; }
+    ul.innerHTML = history.map((h,i)=>`<li><span>${history.length-i}. ${esc(h.who)}</span><b>กล่อง #${h.n}</b></li>`).join("");
+  }
+
+  /* ---------- names ---------- */
+  function parseNames(){
+    return $("names").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  }
+  function updateCount(){ $("cnt").textContent = `(บนวงล้อ ${names.length} คน)`; }
+  function applyNames(){
+    if(spinning || current) return;
+    allNames = parseNames(); names = [...allNames];
+    $("spinBtn").disabled = !names.length;
+    updateCount(); draw();
+  }
+
+  /* ---------- confetti ---------- */
+  const fx = $("fx"), fctx = fx.getContext("2d"); let parts = [], raf = null;
+  function sizeFx(){ fx.width = innerWidth; fx.height = innerHeight; }
+  addEventListener("resize", sizeFx); sizeFx();
+  function confetti(){
+    for(let i=0;i<160;i++) parts.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*.4,
+      vx:(Math.random()-.5)*16,vy:-Math.random()*16-4,s:6+Math.random()*7,r:Math.random()*6,vr:(Math.random()-.5)*.4,
+      c:CONF[Math.floor(Math.random()*CONF.length)],l:140+Math.random()*60});
+    if(!raf) raf = requestAnimationFrame(tick);
+  }
+  function tick(){
+    fctx.clearRect(0,0,fx.width,fx.height);
+    parts = parts.filter(p=>p.l>0 && p.y<fx.height+30);
+    for(const p of parts){
+      p.x+=p.vx; p.y+=p.vy; p.vy+=.38; p.vx*=.99; p.r+=p.vr; p.l--;
+      fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(p.r); fctx.fillStyle=p.c;
+      fctx.fillRect(-p.s/2,-p.s/3,p.s,p.s*.6); fctx.restore();
+    }
+    raf = parts.length ? requestAnimationFrame(tick) : null;
+    if(!raf) fctx.clearRect(0,0,fx.width,fx.height);
+  }
+
+  /* ---------- events ---------- */
+  $("spinBtn").onclick = spin;
+  $("applyBtn").onclick = applyNames;
+  $("shuffleBtn").onclick = () => {
+    const a = parseNames();
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    $("names").value = a.join("\n"); applyNames();
+  };
+  $("resetAllBtn").onclick = () => {
+    if(spinning) return;
+    if(!confirm("รีเซ็ตวงล้อ กล่องของขวัญ และผลการจับรางวัลทั้งหมด?")) return;
+    taken = {}; history = []; current = null;
+    $("winModal").classList.remove("show");
+    renderHist(); applyNames(); buildGrid();
+    setStatus("หมุนวงล้อเพื่อเลือกผู้โชคดีก่อน", false);
+  };
+  $("goPick").onclick = () => {
+    $("winModal").classList.remove("show");
+    setStatus(`${current} – เลือกกล่องของขวัญได้เลย!`, true);
+    buildGrid();
+    $("grid").scrollIntoView({behavior:"smooth",block:"center"});
+  };
+  $("randBox").onclick = () => {
+    const free = []; for(let i=1;i<=boxCount;i++) if(!taken[i]) free.push(i);
+    if(free.length) pickBox(free[Math.floor(Math.random()*free.length)]);
+  };
+  $("revOk").onclick = () => $("revModal").classList.remove("show");
+  $("boxApply").onclick = () => {
+    if(current) return;
+    let v = parseInt($("boxN").value,10);
+    if(!(v>=2)) v = 2; if(v>100) v = 100;
+    if(Object.keys(taken).length>0 && !confirm("เปลี่ยนจำนวนกล่องจะล้างกล่องที่ถูกเลือกไปแล้ว ต้องการต่อหรือไม่?")) return;
+    boxCount = v; taken = {}; $("boxN").value = v; buildGrid();
+  };
+
+  // init
+  $("names").value = names.join("\n");
+  updateCount(); draw(); buildGrid();
+})();
+</script>
+</body>
+</html>
